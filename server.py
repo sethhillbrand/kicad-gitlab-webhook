@@ -31,7 +31,7 @@ gitlab_secret = os.environ['GITLAB_SECRET']
 app = Flask(__name__)
 
 @app.route('/issue', methods=['POST'])
-def index():
+def issue():
     if request.headers['X-Gitlab-Token'] != gitlab_secret:
         abort(403)
 

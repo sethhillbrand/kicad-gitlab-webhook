@@ -32,22 +32,25 @@ app = Flask(__name__)
 
 @app.route('/issue', methods=['POST'])
 def issue():
-    if request.headers['X-Gitlab-Token'] != gitlab_secret:
-        abort(403)
+    try:
+        if request.headers['X-Gitlab-Token'] != gitlab_secret:
+            abort(403)
 
-    if request.headers['X-Gitlab-Event'] != 'Issue Hook':
+        if request.headers['X-Gitlab-Event'] != 'Issue Hook':
+            abort(400)
+
+        payload = json.loads(request.data)
+        gl = gitlab.Gitlab(gitlab_url, private_token=gitlab_token)
+        project = gl.projects.get(payload['project']['id'])
+
+        issue = project.issues.get(payload['object_attributes']['iid'])
+        issue.labels.append('priority::undecided')
+        issue.labels.append('status::new')
+        issue.save()
+
+        return 'OK'
+    except:
         abort(400)
-
-    payload = json.loads(request.data)
-    gl = gitlab.Gitlab(gitlab_url, private_token=gitlab_token)
-    project = gl.projects.get(payload['project']['id'])
-
-    issue = project.issues.get(payload['object_attributes']['iid'])
-    issue.labels.append('priority::undecided')
-    issue.labels.append('status::new')
-    issue.save()
-
-    return 'OK'
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
